@@ -1,0 +1,167 @@
+pipeline {
+    agent any
+    tools {
+        gradle 'gradle-7.6.1'
+        jdk 'jdk-17'
+    }
+    /***********************
+     * 환경 설정
+     ***********************/
+    parameters {
+        // DockerHub 사용자명 입력
+        string(name: 'DOCKERHUB_USERNAME',  defaultValue: 'academyitwill', description: 'DockerHub 사용자명을 입력하세요.')
+        // GitHub  사용자명 입력
+        string(name: 'GITHUB_USERNAME',  defaultValue: '2025-07-JAVA-DEVELOPER-162', description: 'GitHub  사용자명을 입력하세요.')
+        
+        // 필요하면 젠킨스에서 바로 수정 가능
+        string(name: 'EC2_USER',      defaultValue: 'ubuntu', description: '배포 대상 EC2 user')
+        string(name: 'EC2_HOST',      defaultValue: 'ec2-3-34-197-242.ap-northeast-2.compute.amazonaws.com', description: '배포 대상 EC2 호스트 ')
+        string(name: 'EC2_APP_DIR',   defaultValue: '/home/ubuntu/deploy_guest_aws', description: 'EC2 내 애플리케이션 디렉터리')
+        string(name: 'GIT_BRANCH',    defaultValue: 'main', description: 'EC2에서 git pull 할 브랜치')
+        string(name: 'COMPOSE_FILE',  defaultValue: 'docker-compose-guest-mysql-image.yml', description: '사용할 docker compose 파일명')
+        string(name: 'COMPOSE_CMD',   defaultValue: 'docker-compose', description: 'docker compose 명령(docker-compose 또는 docker compose)')
+    }
+
+    environment {
+         // ===== Git Repositories =====
+        GITHUB_SCRIPT_URL = "https://github.com/${GITHUB_USERNAME}/deploy_guest_aws_script.git"
+        GITHUB_SOURCE_URL = "https://github.com/${GITHUB_USERNAME}/deploy_guest_aws.git"
+        // Jenkins → Credentials → SSH Username with private key
+        EC2_SSH_CREDENTIALS   = 'deploy-ssh-key'
+        // Jenkins → Credentials → Username with password (DockerHub 로그인용)
+        DOCKERHUB_CREDENTIALS = 'dockerhub-cred'
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        /***********************
+         * 0. 정보 출력
+         ***********************/
+        stage('정보 출력') {
+            steps {
+                echo "DockerHub 사용자명: ${params.DOCKERHUB_USERNAME}"
+                echo "GitHub 사용자명   : ${params.GITHUB_USERNAME}"
+                echo "배포 대상 EC2 유저 : ${params.EC2_USER}"
+                echo "배포 대상 EC2 호스트: ${params.EC2_HOST}"
+                echo "EC2 앱 디렉터리   : ${params.EC2_APP_DIR}"
+                echo "Git 브랜치        : ${params.GIT_BRANCH}"
+                echo "Compose 파일      : ${params.COMPOSE_FILE}"
+                echo "Compose 명령      : ${params.COMPOSE_CMD}"
+            }
+        }
+
+        /***********************
+         * 1. 소스 체크아웃 & Gradle 빌드
+         ***********************/
+        stage('Source Build') {
+            steps {
+                dir('deploy_guest_aws') {
+                    // 소스파일 체크아웃
+                    git branch: 'main',
+                        url: "${GITHUB_SOURCE_URL}"
+
+                    // gradlew 실행권한 부여 (윈도우 → 리눅스 퍼미션 문제)
+                    sh "chmod +x ./gradlew"
+
+                    // Gradle 빌드 (wrapper 사용)
+                    sh "./gradlew clean build"
+                }
+            }
+        }
+
+        /***********************
+         * 2. Docker 이미지 빌드 & DockerHub 푸시
+         ***********************/
+        stage('Docker Build & Push') {
+            steps {
+                dir('deploy_guest_aws') {
+                    withCredentials([usernamePassword(
+                        credentialsId: env.DOCKERHUB_CREDENTIALS,
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_PASS'
+                    )]) {
+                        sh """
+                            echo "==== Docker Build 시작 ===="
+                            docker build  -t ${params.DOCKERHUB_USERNAME}/guest-app:latest .
+                            echo "==== DockerHub 로그인 ===="
+                            echo "${DOCKERHUB_PASS}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+
+                            echo "==== DockerHub Push ===="
+                            docker push ${params.DOCKERHUB_USERNAME}/guest-app:latest
+
+                            echo "==== DockerHub Logout ===="
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+
+        /***********************
+         * 1. EC2에 접속하여 git + docker-compose 배포
+         ***********************/
+        stage('EC2 배포') {
+            steps {
+                sshagent([env.EC2_SSH_CREDENTIALS]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${params.EC2_USER}@${params.EC2_HOST} '
+                            set -e
+
+                            echo "[EC2] 배포 디렉토리: ${params.EC2_APP_DIR}"
+
+                            # 1) 디렉토리 / 레포 존재 여부 확인
+                            if [ ! -d "${params.EC2_APP_DIR}/.git" ]; then
+                                echo "[EC2] 디렉토리 또는 git 레포 없음 → 새로 clone"
+                                rm -rf "${params.EC2_APP_DIR}"
+                                mkdir -p "${params.EC2_APP_DIR}"
+                                cd "${params.EC2_APP_DIR}"
+
+                                git clone https://github.com/${params.GITHUB_USERNAME}/deploy_guest_aws.git .
+                            else
+                                echo "[EC2] 기존 git 레포 존재 → git pull"
+                                cd "${params.EC2_APP_DIR}"
+                                git status || true
+                                git fetch origin
+                                git checkout ${params.GIT_BRANCH}
+                                git pull origin ${params.GIT_BRANCH}
+                            fi
+
+                            echo "[EC2] 현재 디렉토리:"
+                            pwd
+
+                            echo "[EC2] 디렉토리 파일 목록:"
+                            ls -al
+
+                            # 2) docker-compose 배포
+                            echo "[EC2] docker-compose pull (이미지 갱신)"
+                            ${params.COMPOSE_CMD} -f ${params.COMPOSE_FILE} pull || true
+
+                            echo "[EC2] 기존 컨테이너 down"
+                            ${params.COMPOSE_CMD} -f ${params.COMPOSE_FILE} down || true
+
+                            echo "[EC2] 컨테이너 up -d"
+                            ${params.COMPOSE_CMD} -f ${params.COMPOSE_FILE} up -d
+
+                            echo "[EC2] 컨테이너 상태 확인"
+                            ${params.COMPOSE_CMD} ps
+                        '
+                    """
+                }
+            }
+        }
+    }
+  
+    post {
+        success {
+            echo "✅ EC2 배포 성공!"
+        }
+        failure {
+            echo "❌ EC2 배포 실패. 콘솔 로그를 확인하세요."
+        }
+    }
+}
