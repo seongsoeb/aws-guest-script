@@ -1,5 +1,5 @@
 services:
-  mysqlservice:
+  mysqlservice.default:
     image: mysql:8.0
     container_name: mysql_compose_container
 
@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: jdeveloper
       TZ: Asia/Seoul
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_volume:/var/lib/mysql
       - ./001.mysql-init.sql:/docker-entrypoint-initdb.d/001.mysql-init.sql
@@ -22,7 +22,7 @@ services:
     ]
   guestservice:
     depends_on:
-      - mysqlservice
+      - mysqlservice.default
     container_name: docker_compose_guest_container
     build:
       context: ./

@@ -1,5 +1,5 @@
 services:
-  mysqlservice:
+  mysqlservice.default:
     image: mysql:8.0
     container_name: mysql_compose_container
 
@@ -22,9 +22,9 @@ services:
     ]
   guestservice:
     depends_on:
-      - mysqlservice
+      - mysqlservice.default
     container_name: docker_compose_guest_container
-    image: academyitwill/guest-app # 도커 허브에서 앱 이미지 사용
+    image: academyitwill/guest # 도커 허브에서 앱 이미지 사용
     environment:
       SPRING_PROFILES_ACTIVE: mysql-prod-group   # ★ 프로필 분리됨
     ports:
