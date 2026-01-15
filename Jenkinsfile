@@ -86,8 +86,8 @@ pipeline {
                     mkdir -p "${EC2_APP_DIR}"
                     cd "${EC2_APP_DIR}"
 
-                    echo "[EC2] Git clone: ${params.GITHUB_USERNAME}/deploy_guest_aws_script.git"
-                    git clone https://github.com/${params.GITHUB_USERNAME}/deploy_guest_aws_script.git .
+                    echo "[EC2] Git clone: ${GITHUB_SCRIPT_URL}"
+                    git clone ${GITHUB_SCRIPT_URL} .
 
                     echo "[EC2] 현재 디렉토리:"
                     pwd
