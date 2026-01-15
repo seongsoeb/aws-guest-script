@@ -21,7 +21,7 @@ pipeline {
         
        // ===== EC2 =====
         EC2_USER='ubuntu'
-        EC2_HOST='54.180.139.195'
+        EC2_HOST='43.201.114.152'
         EC2_APP_DIR='/home/ubuntu/aws-guest-script'
         DOCKER_COMPOSE_FILE='docker-compose-guest-mysql-image.yml'
         //DOCKER_COMPOSE_FILE='docker-compose-guest-mysql.yml'
