@@ -127,25 +127,25 @@ ls -al
 echo "[EC2][GREEN] docker-compose pull (이미지 갱신)"
 docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} pull || true
 
-echo "[EC2][BLUE] 기존 컨테이너 down"
+echo "[EC2][GREEN] 기존 컨테이너 down"
 docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} down || true
 
-echo "[EC2][BLUE] 기존 이미지 삭제 (compose에서 사용하는 이미지만)"
+echo "[EC2][GREEN] 기존 이미지 삭제 (compose에서 사용하는 이미지만)"
 IMAGES=$(docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} images -q || true)
 if [ -n "$IMAGES" ]; then
-    echo "[EC2][BLUE]  삭제할 이미지: $IMAGES"
+    echo "[EC2][GREEN]  삭제할 이미지: $IMAGES"
     docker rmi $IMAGES || true
 else
-    echo "[EC2][BLUE] 삭제할 이미지 없음"
+    echo "[EC2][GREEN] 삭제할 이미지 없음"
 fi
 
-echo "[EC2][BLUE]  Dangling 이미지 정리"
+echo "[EC2][GREEN]  Dangling 이미지 정리"
 docker image prune -f || true
 
-echo "[EC2][BLUE] 새로운 컨테이너 up -d"
+echo "[EC2][GREEN] 새로운 컨테이너 up -d"
 docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} up -d
 
-echo "[EC2][BLUE] 컨테이너 상태 확인"
+echo "[EC2][GREEN] 컨테이너 상태 확인"
 docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} ps
 
 EOF
@@ -157,10 +157,10 @@ EOF
         
         post {
                 success {
-                    echo "✅ EC2 블루 배포 성공!"
+                    echo "✅ EC2 그린 배포 성공!"
                 }
                 failure {
-                    echo "❌ EC2 배포 실패. 콘솔 로그를 확인하세요."
+                    echo "❌ EC2 그린 실패. 콘솔 로그를 확인하세요."
                 }
         }
        
