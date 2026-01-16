@@ -39,13 +39,12 @@ pipeline {
                     ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
                         set -e
                         echo "[EC2] 배포 디렉토리: ${EC2_APP_DIR}"
+                        
                         rm -rf "${EC2_APP_DIR}"
                         mkdir -p "${EC2_APP_DIR}"
                         cd "${EC2_APP_DIR}"
 
-                        echo "[EC2] Git clone: ${GITHUB_SCRIPT_URL}"
-                        #git clone ${GITHUB_SCRIPT_URL} .
-
+                        echo "[EC2] Git sparse checkout: ${GITHUB_SCRIPT_URL}"
                         # Git 초기화
                         git init
                         # 원격 저장소 연결

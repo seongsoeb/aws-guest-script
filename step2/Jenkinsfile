@@ -74,7 +74,7 @@ pipeline {
         }
 
         /***********************
-         * 1. EC2에 접속하여 git + docker-compose 배포
+         * 3. EC2에 접속하여 git + docker-compose 배포
          ***********************/
         stage('EC2 배포') {
             steps {
@@ -86,9 +86,17 @@ pipeline {
                         rm -rf "${EC2_APP_DIR}"
                         mkdir -p "${EC2_APP_DIR}"
                         cd "${EC2_APP_DIR}"
-
-                        echo "[EC2] Git clone: ${GITHUB_SCRIPT_URL}"
-                        git clone ${GITHUB_SCRIPT_URL} .
+                        echo "[EC2] Git sparse checkout: ${GITHUB_SCRIPT_URL}"
+                        # Git 초기화
+                        git init
+                        # 원격 저장소 연결
+                        git remote add origin ${GITHUB_SCRIPT_URL}
+                        # sparse checkout 활성화
+                        git config core.sparseCheckout true
+                        # 체크아웃할 경로 지정 (예: ${STEP_NUM}/deploy/ 디렉토리만)
+                        echo "${STEP_NUM}/deploy/" >> .git/info/sparse-checkout
+                        # 특정 브랜치를 sparse-checkout
+                        git pull origin main
 
                         echo "[EC2] 현재 디렉토리:"
                         pwd
