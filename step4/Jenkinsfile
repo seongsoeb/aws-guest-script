@@ -94,6 +94,65 @@ EOF
                     input message: '자동배포 시작', ok: "Yes"
                 }
             }
+            /***********************
+         * 2. EC2에 접속하여 git + docker-compose Green 배포
+         ***********************/
+        stage('EC2 그린 배포') {
+            steps {
+                sshagent([env.EC2_SSH_CREDENTIALS]) {
+        sh '''
+ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} <<EOF
+set -e
+echo "[EC2][GREEN] 배포 디렉토리: ${EC2_APP_DIR}"
+
+rm -rf "${EC2_APP_DIR}"
+mkdir -p "${EC2_APP_DIR}"
+cd "${EC2_APP_DIR}"
+
+echo "[EC2][GREEN] Git sparse checkout: ${GITHUB_SCRIPT_URL}"
+git init
+git remote add origin ${GITHUB_SCRIPT_URL}
+git config core.sparseCheckout true
+
+# sparse checkout path:
+echo "${STEP_NUM}/deploy/" >> .git/info/sparse-checkout
+git pull origin main
+
+echo "[EC2][GREEN] 현재 디렉토리:"
+pwd
+
+echo "[EC2][GREEN] 디렉토리 파일 목록:"
+ls -al
+
+echo "[EC2][GREEN] docker-compose pull (이미지 갱신)"
+docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} pull || true
+
+echo "[EC2][BLUE] 기존 컨테이너 down"
+docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} down || true
+
+echo "[EC2][BLUE] 기존 이미지 삭제 (compose에서 사용하는 이미지만)"
+IMAGES=$(docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} images -q || true)
+if [ -n "$IMAGES" ]; then
+    echo "[EC2][BLUE]  삭제할 이미지: $IMAGES"
+    docker rmi $IMAGES || true
+else
+    echo "[EC2][BLUE] 삭제할 이미지 없음"
+fi
+
+echo "[EC2][BLUE]  Dangling 이미지 정리"
+docker image prune -f || true
+
+echo "[EC2][BLUE] 새로운 컨테이너 up -d"
+docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} up -d
+
+echo "[EC2][BLUE] 컨테이너 상태 확인"
+docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} ps
+
+EOF
+'''
+                    }
+                }
+            }
         }
         
         post {
