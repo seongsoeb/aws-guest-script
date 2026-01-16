@@ -36,7 +36,7 @@ pipeline {
             steps {
                 sshagent([env.EC2_SSH_CREDENTIALS]) {
         sh '''
-            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} <<EOF
                 set -e
                 echo "[EC2] 배포 디렉토리: ${EC2_APP_DIR}"
 
@@ -83,7 +83,7 @@ pipeline {
                 echo "[EC2] 컨테이너 상태 확인"
                 docker compose -f ./${STEP_NUM}/deploy/${DOCKER_COMPOSE_FILE} ps
 
-            EOF
+        EOF
         '''
                 }
             }
