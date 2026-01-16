@@ -173,7 +173,7 @@ echo "[EC2][GREEN] MySQL 컨테이너 확인 및 생성"
 if docker ps -a --format '{{.Names}}' | grep -q '^mysql_compose_container\$'; then
   echo "[EC2][GREEN] mysql_compose_container 이미 존재함 → 재사용"
   docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_MYSQL_FILE} down || true
-  docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_FILE} up -d
+  docker compose -f ./${STEP_NUM}/deploy/green/${DOCKER_COMPOSE_MYSQL_FILE} up -d
   
 else
   echo "[EC2][GREEN] mysql_compose_container 없음 → 새로 생성"
