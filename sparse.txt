@@ -7,8 +7,8 @@ git remote add origin ${GITHUB_SCRIPT_URL}
 # sparse checkout 활성화
 git config core.sparseCheckout true
 
-# 체크아웃할 경로 지정 (예: scripts/ 디렉토리만)
-echo "scripts/" >> .git/info/sparse-checkout
+# 체크아웃할 경로 지정 (예: step3/ 디렉토리만)
+echo "step3/" >> .git/info/sparse-checkout
 
 # 특정 브랜치를 sparse-checkout
 git pull origin main
