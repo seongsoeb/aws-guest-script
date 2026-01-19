@@ -36,8 +36,18 @@ pipeline {
          ***********************/
         stage('Source Build') {
             steps {
-                git branch: 'main',
-                url: "${GITHUB_SOURCE_URL}"
+               checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: "${GITHUB_SOURCE_URL}"
+                    ]],
+                    extensions: [
+                        [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
+                            [path: 'backend/'],     // 필요한 디렉토리만
+                        ]]
+                    ]
+                ])
                 sh "chmod +x ./gradlew"
                 sh "./gradlew clean build"
             }
