@@ -38,7 +38,8 @@ pipeline {
         stage('Source Build') {
             steps {
                 git branch: 'main',
-                url: "${GITHUB_SOURCE_URL}"
+                url: "${GITHUB_SOURCE_URL}",
+                credentialsId: env.GITHUB_CREDENTIALS
                 sh "chmod +x ./gradlew"
                 sh "./gradlew clean build"
             }
