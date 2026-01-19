@@ -56,6 +56,27 @@ pipeline {
                 }
             }
         }
+         stage('Source Build[/guest-frontend]') {
+            steps {
+               checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: "${GITHUB_SOURCE_URL}",
+                        credentialsId: env.GITHUB_CREDENTIALS
+                    ]],
+                    extensions: [
+                        [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
+                            [path: 'guest_frontend/']
+                        ]]
+                    ]
+                ])
+                dir('guest_frontend') {
+                    sh "chmod +x gradlew"
+                    sh "./gradlew clean build"
+                }
+            }
+        }
         /***********************
          * 2.  Docker 이미지 빌드 & DockerHub 푸시
          ***********************/
