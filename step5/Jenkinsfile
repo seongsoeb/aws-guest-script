@@ -34,20 +34,14 @@ pipeline {
         /***********************
          * 1. 소스 체크아웃 & Gradle 빌드
          ***********************/
-        stage('Source Build') {
+        stage('Source Build[/guest-backend]') {
             steps {
-               checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: "${GITHUB_SOURCE_URL}"
-                    ]],
-                    extensions: [
-                        [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
-                            [path: 'backend/'],     // 필요한 디렉토리만
-                        ]]
-                    ]
-                ])
+               checkout scmGit(
+                        branches: [[name: '*/main']],
+                        extensions: [[$class: 'SparseCheckoutPaths',
+                                     sparseCheckoutPaths: [[path: "/guest_backend"]]]],
+                                     userRemoteConfigs: [[url: "${GITHUB_SOURCE_URL}"]]
+                        )
                 sh "chmod +x ./gradlew"
                 sh "./gradlew clean build"
             }
