@@ -1,7 +1,7 @@
 # 1단계: Gradle 이미지로 빌드 수행
 FROM gradle:8.5.0-jdk21 AS build
 WORKDIR /app
-COPY gradle gradle
+COPY guest_backend/gradle gradle
 COPY gradlew .
 COPY build.gradle* settings.gradle* gradle.properties* ./
 
