@@ -1,7 +1,7 @@
 services:
   guestservice:
     container_name: guest_green_container
-    image: academyitwill/guest:v3 # 도커 허브에서 앱 이미지 사용
+    image: academyitwill/guest:v4 # 도커 허브에서 앱 이미지 사용
     environment:
       SPRING_PROFILES_ACTIVE: mysql-prod-group   # ★ 프로필 분리됨
     #depends_on:
@@ -18,3 +18,4 @@ networks:
   guest_network:
     external: true    
     
+
