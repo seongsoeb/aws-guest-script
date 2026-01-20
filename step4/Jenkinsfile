@@ -10,7 +10,7 @@ pipeline {
      ***********************/
     parameters {
         // GitHub  사용자명 입력
-        string(name: 'GITHUB_USERNAME',  defaultValue: '2025-07-JAVA-DEVELOPER-162', description: 'GitHub  사용자명을 입력하세요.')
+        string(name: 'GITHUB_USERNAME',  defaultValue: 'seongsoeb', description: 'GitHub  사용자명을 입력하세요.')
     }
     environment {
        // ===== Git Repositories =====
@@ -18,7 +18,7 @@ pipeline {
         
        // ===== EC2 =====
         EC2_USER='ubuntu'
-        EC2_HOST='15.164.228.132'
+        EC2_HOST='3.37.16.175'
         EC2_APP_DIR='/home/ubuntu/aws-guest-script'
         STEP_NUM='step4'
         DOCKER_COMPOSE_MYSQL_FILE='docker-compose-mysql-image.yml'
